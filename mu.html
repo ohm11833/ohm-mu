@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Happy Birthday — (ใส่ชื่อ) (Space Edition)</title>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,400&family=Cinzel:wght@400;600;700;900&family=Cinzel+Decorative:wght@700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --deep-bg: #000000;
+    --rose-light: #ffe0eb;
+    --rose-mid: #ff7aa5;
+    --rose-dark: #cc2963;
+    --pink-grad-1: #ffb3c6;
+    --pink-grad-2: #ff4d79;
+    --pink-grad-3: #b30047;
+    --white: #ffffff;
+    --bg-c1: #050510; 
+    --bg-c2: #000000;
+  }
+  
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    background: var(--deep-bg); 
+    font-family: 'Kanit', 'Cinzel', serif; 
+    color: var(--white); cursor: default; user-select: none;
+    -webkit-font-smoothing: antialiased;
+    touch-action: none; /* ป้องกันการเลื่อนหน้าจอปกติเวลาซูมบนมือถือ */
+  }
+  
+  #bg {
+    position: fixed; inset: 0; z-index: 0;
+    background: radial-gradient(ellipse at 50% 50%, var(--bg-c1) 0%, var(--bg-c2) 60%, #000000 100%);
+  }
+
+  #stars-container {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+  }
+  .star {
+    position: absolute; background: #fff; border-radius: 50%;
+    animation: twinkle infinite alternate;
+  }
+  @keyframes twinkle {
+    0% { opacity: 0.1; transform: scale(0.8); }
+    100% { opacity: 1; transform: scale(1.2); }
+  }
+  
+  .scene {
+    position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none; z-index: 10;
+  }
+  .scene.active { pointer-events: all; }
+  #canvas { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
+  
+  .text-rose {
+    background: linear-gradient(to right, #ff7aa5, #fff0f5, #ff4d79, #ffe0eb, #ff7aa5);
+    background-size: 200% auto; -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 4px 15px rgba(255,122,165,0.5));
+    animation: shine 5s linear infinite;
+    will-change: background-position;
+  }
+  @keyframes shine { to { background-position: 200% center; } }
+
+  #countdown-num {
+    position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+    font-size: clamp(8rem, 30vw, 22rem); font-weight: 900; opacity: 0; z-index: 25; pointer-events: none;
+    will-change: transform, opacity, filter;
+  }
+  #countdown-rings { position: fixed; inset: 0; z-index: 24; pointer-events: none; }
+  .ring {
+    position: absolute; border-radius: 50%; border: 3px solid rgba(255,255,255,0.6);
+    width: 200px; height: 200px; top: 50%; left: 50%;
+    transform: translate(-50%,-50%) scale(0) translateZ(0); opacity: 0;
+    will-change: transform, opacity;
+  }
+  #flash-overlay {
+    position: fixed; inset: 0;
+    background: radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.2) 0%, transparent 80%);
+    z-index: 23; pointer-events: none; opacity: 0;
+    will-change: opacity, background;
+  }
+
+  #scene-text { flex-direction: column; gap: 0; z-index: 20; }
+  .big-word {
+    position: absolute; font-family: 'Kanit', 'Cinzel', serif;
+    font-size: clamp(3.5rem, 12vw, 10rem); font-weight: 700;
+    letter-spacing: .10em; opacity: 0; transform: scale(.7) translateZ(0);
+    text-align: center; line-height: 1.2;
+    will-change: transform, opacity;
+  }
+  #scene-globe { flex-direction: column; gap: 3rem; z-index: 20; perspective: 1200px; }
+  #globe-wrap {
+    position: relative; width: min(60vw,60vh,380px); height: min(60vw,60vh,380px);
+    transform-style: preserve-3d; animation: globeSpin 35s linear infinite;
+    will-change: transform;
+  }
+  #globe-glow {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
+    width: 150%; height: 150%; border-radius: 50%;
+    background: radial-gradient(circle, rgba(150,200,255,0.15) 0%, transparent 60%);
+    pointer-events: none; z-index: -1;
+  }
+  @keyframes globeSpin {
+    0%   { transform: rotateY(0deg) rotateX(0deg); }
+    100% { transform: rotateY(360deg) rotateX(0deg); }
+  }
+  .tile-wrapper { 
+    position: absolute; left: 50%; top: 50%; transform-style: preserve-3d; 
+    will-change: transform; 
+  }
+  .photo-tile {
+    position: absolute; 
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.8), 0 0 10px rgba(255,255,255,0.2); 
+    opacity: 0; 
+    backface-visibility: hidden;
+    border-radius: 8px; 
+    will-change: transform, opacity;
+    transform: translateZ(0);
+    
+    -webkit-mask-image: 
+      linear-gradient(to right, transparent 0px, black 5px, black calc(100% - 5px), transparent 100%),
+      linear-gradient(to bottom, transparent 0px, black 5px, black calc(100% - 5px), transparent 100%);
+    -webkit-mask-composite: source-in;
+    mask-image: 
+      linear-gradient(to right, transparent 0px, black 15px, black calc(100% - 15px), transparent 100%),
+      linear-gradient(to bottom, transparent 0px, black 15px, black calc(100% - 15px), transparent 100%);
+    mask-composite: intersect;
+  }
+  
+  .photo-tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  #enter-btn {
+    font-family: 'Kanit', 'Cinzel', serif; font-size: clamp(1rem,2.5vw,1.2rem); font-weight: 600;
+    letter-spacing: .15em; color: var(--white); background: rgba(0,0,0,0.6);
+    border: 1px solid rgba(255,255,255,0.5); padding: 0.8em 3.5em; border-radius: 50px;
+    cursor: pointer; opacity: 0; transition: all .4s ease; text-transform: uppercase;
+    pointer-events: none; box-shadow: 0 0 20px rgba(255,255,255,0.2);
+    will-change: transform, opacity, box-shadow;
+  }
+  #enter-btn:hover {
+    box-shadow: 0 0 35px rgba(255,255,255,0.6), inset 0 0 20px rgba(255,255,255,0.3);
+    transform: translateY(-3px) scale(1.05); color: #fff; background: rgba(255,255,255,0.1);
+  }
+  #enter-btn.ready { pointer-events: all; }
+
+  /* คอนเทนเนอร์สำหรับคำตกและรูปภาพ (ปรับให้เลื่อนและซูมได้) */
+  #word-rain {
+    position: fixed; inset: 0; z-index: 8; pointer-events: none; opacity: 0;
+    transform-origin: center center;
+    /* เอา transition ออกเพื่อให้การลากเลื่อนสมูทไม่หน่วง */
+    overflow: visible; /* ให้ของที่อยู่ขอบๆ ไม่โดนตัดเวลาเลื่อน */
+  }
+  
+  .fall-word {
+    position: absolute; top: -50vh; white-space: nowrap; opacity: 0;
+    will-change: transform, opacity; text-shadow: 0 0 20px currentColor, 0 0 40px currentColor;
+    animation: wordFall linear forwards;
+    transform: translateZ(0);
+    pointer-events: auto; /* ทำให้กดได้ */
+    cursor: pointer;
+    transition: filter 0.3s;
+  }
+  
+  @keyframes wordFall {
+    0%   { transform: translateY(0) rotate(var(--wr)) translateX(0); opacity: 0; }
+    6%   { opacity: 1; }
+    85%  { opacity: 1; }
+    /* เพิ่มระยะการตกให้ลึกขึ้นมากๆ เผื่อเวลาซูมออกสุดๆ */
+    100% { transform: translateY(calc(500vh + 500px)) rotate(var(--wr)) translateX(var(--wx)); opacity: 0; }
+  }
+  
+  /* ------------------------------------------------------------- */
+  /* ปรับแต่งส่วนรูปภาพที่ตกลงมา (ฉากสุดท้าย) */
+  /* ------------------------------------------------------------- */
+  .fall-photo {
+    position: absolute; top: -50vh; opacity: 0;
+    will-change: transform, opacity; border-radius: 6px; overflow: hidden;
+    /* แก้ไข: ใส่ขอบรูปเรืองแสงขาวนิดๆ */
+    box-shadow: 0 6px 30px rgba(0,0,0,0.8), 0 0 12px 2px rgba(255,255,255,0.6);
+    animation: wordFall linear forwards;
+    transform: translateZ(0);
+    pointer-events: auto; /* ทำให้กดได้ */
+    cursor: pointer;
+    transition: box-shadow 0.3s, transform 0.3s;
+  }
+  .fall-photo img {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+    /* แก้ไข: ทำให้เป็นสีปกติ (เอา filter ซีเปีย/โทนน้ำเงินออก) */
+    filter: none; 
+  }
+
+  /* คลาสเมื่อถูกกดหยุด */
+  .paused {
+    animation-play-state: paused !important;
+    z-index: 100 !important;
+    filter: brightness(1.1) !important; /* ลดความสว่างลงนิดนึงเมื่อหยุด */
+  }
+  .fall-photo.paused {
+    /* ปรับแสงเรืองตอนหยุดให้ดูนุ่มนวลขึ้น */
+    box-shadow: 0 0 30px rgba(255,255,255,0.8), 0 0 15px rgba(255,255,255,0.5) !important;
+  }
+
+  #ambient { position: fixed; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
+  .amb-dot {
+    position: absolute; border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, transparent 70%);
+    animation: floatUp linear infinite; opacity: 0;
+    will-change: transform, opacity; transform: translateZ(0);
+  }
+  @keyframes floatUp {
+    0%   { transform: translateY(0) scale(1); opacity: 0; }
+    10%  { opacity: 1; }
+    90%  { opacity: .8; }
+    100% { transform: translateY(-100vh) scale(.5); opacity: 0; }
+  }
+  #glow-orb {
+    position: fixed; left: 50%; top: 50%; transform: translate(-50%,-50%) scale(0);
+    width: 8px; height: 8px; border-radius: 50%; background: #ffffff;
+    box-shadow: 0 0 30px 15px #fff, 0 0 80px 40px #aaddff, 0 0 160px 80px #0055ff;
+    z-index: 12; pointer-events: none; opacity: 0;
+    will-change: transform, opacity;
+  }
+  .vignette {
+    position: fixed; inset: 0; z-index: 50;
+    background: radial-gradient(ellipse at 50% 50%, transparent 30%, rgba(0,0,0,0.9) 100%);
+    pointer-events: none;
+  }
+  @media (max-width: 480px) { #globe-wrap { width: 65vw; height: 65vw; } }
+</style>
+</head>
+<body>
+
+<div id="bg"></div>
+<div id="stars-container"></div>
+<div class="vignette"></div>
+<canvas id="canvas"></canvas>
+<div id="ambient"></div>
+<div id="glow-orb"></div>
+<div id="flash-overlay"></div>
+<div id="countdown-rings">
+  <div class="ring" id="r1"></div>
+  <div class="ring" id="r2"></div>
+  <div class="ring" id="r3"></div>
+</div>
+
+<div id="word-rain"></div>
+
+<div id="countdown-num" class="text-rose">3</div>
+
+<div class="scene" id="scene-text">
+  <div class="big-word text-rose" id="w1">HAPPY</div>
+  <div class="big-word text-rose" id="w2">BIRTHDAY</div>
+  <div class="big-word text-rose" id="w3">TO</div>
+  <div class="big-word text-rose" id="w4">M</div>
+</div>
+
+<div class="scene" id="scene-globe">
+  <div id="globe-wrap"><div id="globe-glow"></div></div>
+  <button id="enter-btn">✦ เริ่มเลย ✦</button>
+</div>
+
+<script>
+// ใส่ URL รูปภาพของคุณตรงนี้ (5 รูปสำหรับลูกโลก)
+const myGlobeImages = [
+  'images/9.JPG',
+  'images/3.jpg',
+  'images/11.jpg',
+  'images/7.JPG',
+  'images/19.jpg',
+  'images/17p.PNG',
+  'images/20.jpg'
+];
+
+// ใส่ URL รูปภาพของคุณตรงนี้ (หลายๆ รูปสำหรับฉากสุดท้าย)
+const myRainImages = [
+  'images/9.jpg',
+  'images/10.jpg',
+  'images/11.jpg',
+  'images/18.jpg',
+  'images/7.jpg',
+  'images/8.jpg',
+  'images/3.jpg',
+  'images/1.jpg'
+];
+
+const FALL_WORDS = [
+  'มีความสุขมากๆนะ', 'ยิ้มเยอะๆ', 'รักนะ', 'รักที่สุดในโลก', 'สุขภาพแข็งแรง',
+  'รักตลอดไป', 'มีความสุขมากๆนะ', 'ขอให้โชคดี', 'รักนะ', 'ยิ้มเยอะๆ',
+  'รักนะ', 'พบเจอแต่สิ่งดีๆ', 'รวยๆ เฮงๆ', 'รักที่สุดในโลก', 'คนเก่ง',
+  'Happy Birthday', 'I love you', 'LOVE',
+  'Happy Birthday', 'I love you','LOVE'
+];
+
+const canvas = document.getElementById('canvas');
+const ctx    = canvas.getContext('2d', { alpha: true, desynchronized: true });
+let W, H, cx, cy;
+function resize() { 
+  W = canvas.width = window.innerWidth; 
+  H = canvas.height = window.innerHeight; 
+  cx = W/2; cy = H/2; 
+}
+resize();
+window.addEventListener('resize', resize);
+
+function createStars() {
+  const container = document.getElementById('stars-container');
+  const numStars = 200;
+  for(let i=0; i<numStars; i++) {
+    const star = document.createElement('div');
+    star.className = 'star';
+    const size = Math.random() * 2.5 + 'px';
+    star.style.width = size;
+    star.style.height = size;
+    star.style.left = Math.random() * 100 + '%';
+    star.style.top = Math.random() * 100 + '%';
+    star.style.animationDuration = (Math.random() * 3 + 1) + 's';
+    star.style.animationDelay = (Math.random() * 3) + 's';
+    container.appendChild(star);
+  }
+}
+
+window.addEventListener('load', () => {
+  createStars();
+  buildGlobe();
+  setTimeout(() => { showCountdown(); }, 500); 
+});
+
+(function spawnAmbient() {
+  const c = document.getElementById('ambient');
+  for (let i = 0; i < 30; i++) {
+    const d = document.createElement('div');
+    d.className = 'amb-dot';
+    const s = rand(2, 5);
+    d.style.cssText = `width:${s}px;height:${s}px;left:${rand(0,100)}%;bottom:${rand(-20,10)}%;animation-duration:${rand(10,25)}s;animation-delay:${rand(0,15)}s;`;
+    c.appendChild(d);
+  }
+})();
+
+function rand(min, max) { return Math.random() * (max - min) + min; }
+function choice(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+let fireworks = [], fwActive = false;
+const FW_COLORS = ['#ffffff','#aaddff','#ffe0eb','#ff7aa5','#ffb3c6'];
+
+const fwCache = {};
+FW_COLORS.forEach(color => {
+  const c = document.createElement('canvas');
+  c.width = 16; c.height = 16; 
+  const x = c.getContext('2d');
+  const g = x.createRadialGradient(8,8,0,8,8,8);
+  g.addColorStop(0,'#fff'); g.addColorStop(.4,color); g.addColorStop(1,'transparent');
+  x.fillStyle=g; x.beginPath(); x.arc(8,8,8,0,Math.PI*2); x.fill();
+  fwCache[color] = c;
+});
+
+class FWParticle {
+  constructor(x,y) {
+    this.x=x; this.y=y;
+    const a=rand(0,Math.PI*2), s=rand(3,10);
+    this.vx=Math.cos(a)*s; this.vy=Math.sin(a)*s-rand(0,2);
+    this.alpha=1; this.color=choice(FW_COLORS); this.r=rand(2,4);
+    this.gravity=rand(.05,.12); this.decay=rand(.015,.03); this.trail=[];
+  }
+  update() {
+    this.trail.push({x:this.x,y:this.y});
+    if(this.trail.length>6) this.trail.shift();
+    this.vx*=.96; this.vy+=this.gravity;
+    this.x+=this.vx; this.y+=this.vy; this.alpha-=this.decay;
+  }
+  draw() {
+    ctx.lineCap='round';
+    ctx.beginPath();
+    for(let i=1;i<this.trail.length;i++){
+      ctx.globalAlpha=(i/this.trail.length)*this.alpha*.8;
+      ctx.strokeStyle=this.color;
+      ctx.lineWidth=this.r*(i/this.trail.length);
+      ctx.moveTo(this.trail[i-1].x,this.trail[i-1].y);
+      ctx.lineTo(this.trail[i].x,this.trail[i].y);
+    }
+    ctx.stroke();
+
+    ctx.globalAlpha=this.alpha;
+    const size = this.r * 4;
+    ctx.drawImage(fwCache[this.color], this.x - size/2, this.y - size/2, size, size);
+    ctx.globalAlpha=1;
+  }
+}
+function launchFirework(x,y){const c=Math.floor(rand(60,100));for(let i=0;i<c;i++)fireworks.push(new FWParticle(x,y));}
+
+let warpParticles=[], warpState={speed:0};
+class WarpParticle {
+  constructor(){this.reset();}
+  reset(){this.x=rand(-W,W);this.y=rand(-H,H);this.z=rand(10,W);this.pz=this.z;}
+  update(sp){this.pz=this.z;this.z-=sp;if(this.z<1){this.reset();this.pz=this.z;}}
+  draw(){
+    const zRatio = 350 / this.z;
+    const pzRatio = 350 / this.pz;
+    const sx=(this.x * zRatio)+cx, sy=(this.y * zRatio)+cy;
+    const px=(this.x * pzRatio)+cx, py=(this.y * pzRatio)+cy;
+    ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(sx,sy);
+    const a=1-(this.z/W);
+    ctx.strokeStyle=`rgba(255,255,255,${a})`;
+    ctx.lineWidth=Math.max(1,4*a); ctx.stroke();
+  }
+}
+
+let renderMode='none';
+function loop(){
+  if(renderMode === 'none' && fireworks.length === 0){
+    ctx.clearRect(0,0,W,H);
+  } else {
+    ctx.fillStyle='rgba(0,0,0,0.3)'; 
+    ctx.fillRect(0,0,W,H);
+  }
+  
+  if(renderMode==='fireworks'||fireworks.length){
+    fireworks=fireworks.filter(p=>p.alpha>0);
+    fireworks.forEach(p=>{p.update();p.draw();});
+  }
+  if(renderMode==='warp'){
+    ctx.fillStyle='rgba(0,0,0,0.6)'; ctx.fillRect(0,0,W,H);
+    warpParticles.forEach(p=>{p.update(warpState.speed);p.draw();});
+  }
+  requestAnimationFrame(loop);
+}
+loop();
+
+function triggerWarpTransition(onMidpoint){
+  renderMode='warp';
+  if(!warpParticles.length) warpParticles=Array.from({length:300},()=>new WarpParticle());
+  warpState.speed=0;
+  gsap.to(warpState,{speed:80,duration:1.2,ease:'power2.in',onComplete:()=>{
+    const fl=document.getElementById('flash-overlay');
+    fl.style.background='rgba(255,255,255,1)';
+    gsap.fromTo(fl,{opacity:0},{opacity:1,duration:0.15,yoyo:true,repeat:1,
+      onStart:()=>{if(onMidpoint)onMidpoint();},
+      onComplete:()=>{fl.style.background='';}
+    });
+    gsap.to(warpState,{speed:0,duration:1.5,ease:'power2.out',
+      onComplete:()=>{renderMode='none';}
+    });
+  }});
+}
+
+function buildGlobe(){
+  const wrap=document.getElementById('globe-wrap');
+  const glow=document.getElementById('globe-glow');
+  wrap.innerHTML=''; if(glow)wrap.appendChild(glow);
+  const R=wrap.offsetWidth/2;
+  const tileW=Math.max(45,R*.42), tileH=tileW*1.39;
+  const rows=[{lat:-60,count:6},{lat:-30,count:12},{lat:0,count:14},{lat:30,count:12},{lat:60,count:6}];
+  let idx=0;
+  rows.forEach(row=>{
+    for(let i=0;i<row.count;i++){
+      const lon=(360/row.count)*i;
+      const wrapper=document.createElement('div'); wrapper.className='tile-wrapper';
+      wrapper.style.transform=`rotateY(${lon}deg) rotateX(${row.lat}deg)`;
+      const tile=document.createElement('div'); tile.className='photo-tile';
+      tile.style.cssText=`width:${tileW}px;height:${tileH}px;margin-left:-${tileW/2}px;margin-top:-${tileH/2}px;`;
+      const img=document.createElement('img');
+      img.src=myGlobeImages[idx%myGlobeImages.length]; 
+      img.loading='lazy'; img.decoding='async'; 
+      tile.appendChild(img); wrapper.appendChild(tile); wrap.appendChild(wrapper); idx++;
+    }
+  });
+}
+
+const WORD_STYLES = [
+  { font:"'Kanit',serif", sizeMin:1.8, sizeMax:3.5, weight:700, color:'#ff1493', op:0.95 },
+  { font:"'Kanit',serif", sizeMin:1.2, sizeMax:2.2, weight:400, color:'#ff66b2', op:0.90 },
+  { font:"'Kanit',serif", sizeMin:2.0, sizeMax:4.5, weight:300, color:'#ff80df', op:0.85 },
+  { font:"'Kanit',serif", sizeMin:3.0, sizeMax:6.0, weight:700, color:'#ff00ff', op:0.95 } 
+];
+
+// ฟังก์ชันสำหรับสลับการหยุด/เล่นของแอนิเมชัน
+function attachClickToPause(el, gsTween) {
+  let startX, startY;
+  
+  // บันทึกตำแหน่งตอนเริ่มกด เพื่อแยกแยะว่าผู้ใช้ตั้งใจลาก(Pan) หรือกด(Click)
+  el.addEventListener('mousedown', (e) => { startX = e.clientX; startY = e.clientY; });
+  el.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; startY = e.touches[0].clientY; }, {passive: true});
+  
+  const handleInteraction = (endX, endY) => {
+    // ถ้าระยะการลากน้อยกว่า 10px ถือว่าตั้งใจกด ไม่ใช่การเลื่อนหน้าจอ
+    if (Math.abs(endX - startX) < 10 && Math.abs(endY - startY) < 10) {
+      if (el.classList.contains('paused')) {
+        el.classList.remove('paused');
+        gsTween.play(); // ให้ GSAP (opacity) เล่นต่อ
+      } else {
+        el.classList.add('paused');
+        gsTween.pause(); // หยุด GSAP (opacity) ไม่ให้หายไป
+      }
+    }
+  };
+
+  el.addEventListener('mouseup', (e) => handleInteraction(e.clientX, e.clientY));
+  el.addEventListener('touchend', (e) => {
+    if (e.changedTouches.length > 0) {
+      handleInteraction(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+    }
+  });
+}
+
+function spawnItem() {
+  const container = document.getElementById('word-rain');
+  const isPhoto = myRainImages.length > 0 && Math.random() < 0.4;
+  const rot   = rand(-14, 14);
+  const dx    = rand(-50, 50) + 'px';
+  // ขยายวงการเกิดให้กว้างขึ้นมากๆ (-100% ถึง 200%) เพื่อให้ครอบคลุมเวลาซูมออก
+  const xPos  = rand(-100, 200); 
+  const dur   = rand(18, 30); // เพิ่มเวลาตกเพราะระยะทางเพิ่มขึ้น
+
+  let el = document.createElement('div');
+  
+  if (isPhoto) {
+    el.className = 'fall-photo';
+    const w   = Math.floor(rand(110, 220));
+    const h   = Math.floor(w * rand(1.1, 1.6));
+    const img = document.createElement('img');
+    img.src   = choice(myRainImages);
+    img.loading = 'lazy'; img.decoding = 'async'; 
+    el.appendChild(img);
+    el.style.cssText = `width:${w}px; height:${h}px; left:${xPos}%; --wr:${rot}deg; --wx:${dx}; animation-duration:${dur}s;`;
+    container.appendChild(el);
+    
+    let gsTween = gsap.fromTo(el, { opacity:0 }, {
+      opacity: 1.0, duration: 1.8, ease:'power1.out', // ปรับ opacity เป็น 1.0 เพื่อสีที่ชัดเจน
+      onComplete: () => setTimeout(() => { if(!el.classList.contains('paused')) el.remove(); }, dur * 1000 - 800)
+    });
+    attachClickToPause(el, gsTween);
+
+  } else {
+    const text  = choice(FALL_WORDS);
+    const style = choice(WORD_STYLES);
+    const size  = rand(style.sizeMin, style.sizeMax);
+    el.className = 'fall-word';
+    el.textContent = text;
+    el.style.cssText = `
+      font-family:${style.font}; font-size:${size}vw; font-weight:${style.weight};
+      color:${style.color}; left:${xPos}%; --wr:${rot}deg; --wx:${dx}; animation-duration:${dur}s;
+      letter-spacing:${rand(0.05,0.15)}em;
+      text-shadow:0 0 ${rand(15,35)}px ${style.color}, 0 0 ${rand(30,70)}px ${style.color}88;
+    `;
+    container.appendChild(el);
+    
+    let gsTween = gsap.fromTo(el, { opacity:0 }, {
+      opacity: style.op, duration: 1.5, ease:'power1.out',
+      onComplete: () => setTimeout(() => { if(!el.classList.contains('paused')) el.remove(); }, dur * 1000 - 500)
+    });
+    attachClickToPause(el, gsTween);
+  }
+}
+
+function startWordRain() {
+  const container = document.getElementById('word-rain');
+  container.innerHTML = '';
+  
+  // 1. เพิ่มจำนวนตอนเริ่มต้น (จาก 20 เป็น 50) และให้เกิดเร็วขึ้น (จาก 300ms เป็น 150ms)
+  for (let i = 0; i < 50; i++) { 
+    setTimeout(() => spawnItem(), i * 150);
+  }
+  
+  // 2. ปรับความถี่ในการตกต่อเนื่อง (จาก 1200ms เป็น 400ms) 
+  // และสั่งให้เกิดทีละ 2-3 ชิ้นพร้อมกัน
+  setInterval(() => {
+    spawnItem();
+    spawnItem(); // เพิ่มบรรทัดนี้เพื่อให้ตกทีละ 2 ชิ้นพร้อมกัน
+  }, 400); 
+}
+
+function showCountdown(){
+  const el=document.getElementById('countdown-num');
+  const nums=['3','2','1'];
+  let delay=0;
+
+  renderMode = 'warp';
+  if(!warpParticles.length) warpParticles=Array.from({length:250},()=>new WarpParticle());
+  warpState.speed = 30;
+
+  nums.forEach((n,i)=>{
+    setTimeout(()=>{
+      el.textContent=n; 
+      gsap.fromTo(warpState, {speed: 120}, {speed: 30, duration: 1.2, ease: 'power2.out'});
+      gsap.fromTo(el,{opacity:0,scale:.5,filter:'blur(10px)',rotationZ:rand(-15,15)},
+        {opacity:1,scale:1.2,filter:'blur(0px)',rotationZ:0,duration:.6,ease:'back.out(2.5)',
+         onComplete:()=>{
+           gsap.to(el,{scale:1.05,duration:.2,ease:'power1.inOut',yoyo:true,repeat:1,
+             onComplete:()=>{
+               gsap.to(el,{opacity:0,scale:3.5,filter:'blur(20px)',duration:.5,ease:'power3.in',
+                 onComplete:()=>{ 
+                   if(i===2) triggerWarpTransition(startTextScene); 
+                 }
+               });
+             }
+           });
+         }
+        }
+      );
+    }, delay);
+    delay+=1400;
+  });
+}
+
+function startTextScene(){
+  const scene=document.getElementById('scene-text');
+  gsap.to(scene,{opacity:1,duration:.01,onComplete:()=>scene.classList.add('active')});
+
+  const words=['#w1','#w2','#w3','#w4'];
+  const bgColors = [
+    { c1: '#05051a', c2: '#000000' },
+    { c1: '#0a0520', c2: '#000000' },
+    { c1: '#000a1a', c2: '#000000' },
+    { c1: '#050510', c2: '#000000' } 
+  ];
+
+  const tl=gsap.timeline({onComplete: fireworkTransition});
+
+  words.forEach((sel,i)=>{
+    tl.call(()=>{
+      gsap.to(':root', {
+        '--bg-c1': bgColors[i].c1,
+        '--bg-c2': bgColors[i].c2,
+        duration: 0.8
+      });
+    })
+    .to(sel,{opacity:1,scale:1,duration:.8,ease:'elastic.out(1.2,.4)'})
+    .to(sel,{opacity:0,scale:1.15,duration:.5,ease:'power2.in'},'+=.4');
+  });
+}
+
+function fireworkTransition() {
+  renderMode = 'fireworks';
+  
+  setTimeout(() => launchFirework(W * 0.2, H * 0.6), 0);
+  setTimeout(() => launchFirework(W * 0.8, H * 0.4), 400);
+  setTimeout(() => launchFirework(W * 0.5, H * 0.3), 1000);
+  setTimeout(() => launchFirework(W * 0.35, H * 0.5), 1500);
+  setTimeout(() => launchFirework(W * 0.65, H * 0.5), 1500);
+
+  const tl = gsap.timeline();
+  tl.to({}, {duration: 2.5}) 
+    .call(() => {
+      const fl = document.getElementById('flash-overlay');
+      fl.style.background = 'radial-gradient(circle, rgba(255,255,255,1) 0%, transparent 70%)';
+      gsap.fromTo(fl, {opacity:0}, {opacity:1, duration:0.15, yoyo:true, repeat:1});
+
+      gsap.set('#glow-orb', {opacity:1, scale:0.5});
+      gsap.to('#glow-orb', {scale: 40, opacity: 0, duration: 0.8, ease: 'power2.out'});
+    })
+    .to({}, {duration: 0.5})
+    .call(() => { triggerWarpTransition(startGlobeScene); });
+}
+
+function startGlobeScene(){
+  setTimeout(()=>{ fireworks=[]; renderMode='none'; },1500);
+  const textScene=document.getElementById('scene-text');
+  const globeScene=document.getElementById('scene-globe');
+  gsap.to(textScene,{opacity:0,duration:.5,onComplete:()=>textScene.classList.remove('active')});
+  setTimeout(()=>{
+    globeScene.style.opacity=1; globeScene.classList.add('active');
+    const wrappers=document.querySelectorAll('.tile-wrapper');
+    const tl=gsap.timeline();
+    const R=document.getElementById('globe-wrap').offsetWidth/2;
+    wrappers.forEach((wrapper,i)=>{
+      const tile=wrapper.querySelector('.photo-tile');
+      gsap.set(tile,{z:R+800,opacity:0,scale:0,rotationZ:rand(-60,60)});
+      tl.to(tile,{z:R,opacity:1,scale:1,rotationZ:0,duration:rand(2.5,4.0),ease:'power3.out',delay:i*.06},0);
+    });
+    tl.to('#enter-btn',{opacity:1,duration:1.2,ease:'power2.out',onComplete:()=>document.getElementById('enter-btn').classList.add('ready')}, 3.5);
+    document.getElementById('enter-btn').addEventListener('click',startFinalScene,{once:true});
+  },400);
+}
+
+// -------------------------------------------------------------
+// ระบบการซูม (Pinch to Zoom) & ระบบเลื่อน (Pan/Drag)
+// -------------------------------------------------------------
+let isFinalSceneActive = false;
+let currentZoom = 1;
+let currentPanX = 0;
+let currentPanY = 0;
+
+let isDragging = false;
+let startMouseX, startMouseY;
+let initialDistance = null;
+let startZoom = 1;
+let startTouchPanX, startTouchPanY;
+
+function updateTransform() {
+  document.getElementById('word-rain').style.transform = `translate(${currentPanX}px, ${currentPanY}px) scale(${currentZoom})`;
+}
+
+// --- สำหรับคอมพิวเตอร์ (Mouse) ---
+window.addEventListener('wheel', (e) => {
+  if (!isFinalSceneActive) return;
+  currentZoom -= e.deltaY * 0.0015;
+  currentZoom = Math.max(0.3, Math.min(currentZoom, 4)); // ให้ซูมออกได้เยอะขึ้น (0.3)
+  updateTransform();
+});
+
+window.addEventListener('mousedown', (e) => {
+  if (!isFinalSceneActive) return;
+  isDragging = true;
+  startMouseX = e.clientX - currentPanX;
+  startMouseY = e.clientY - currentPanY;
+});
+
+window.addEventListener('mousemove', (e) => {
+  if (!isDragging || !isFinalSceneActive) return;
+  currentPanX = e.clientX - startMouseX;
+  currentPanY = e.clientY - startMouseY;
+  updateTransform();
+});
+
+window.addEventListener('mouseup', () => isDragging = false);
+window.addEventListener('mouseleave', () => isDragging = false);
+
+// --- สำหรับมือถือ (Touch) ---
+window.addEventListener('touchstart', (e) => {
+  if (!isFinalSceneActive) return;
+  
+  if (e.touches.length === 2) {
+    // 2 นิ้ว = เริ่มซูม
+    initialDistance = Math.hypot(
+      e.touches[0].pageX - e.touches[1].pageX,
+      e.touches[0].pageY - e.touches[1].pageY
+    );
+    startZoom = currentZoom;
+  } else if (e.touches.length === 1) {
+    // 1 นิ้ว = เริ่มเลื่อน
+    isDragging = true;
+    startTouchPanX = e.touches[0].pageX - currentPanX;
+    startTouchPanY = e.touches[0].pageY - currentPanY;
+  }
+}, { passive: false });
+
+window.addEventListener('touchmove', (e) => {
+  if (!isFinalSceneActive) return;
+  e.preventDefault(); // ป้องกันเลื่อนหน้าเว็บปกติ
+
+  if (e.touches.length === 2 && initialDistance) {
+    // กำลังซูม
+    const currentDist = Math.hypot(
+      e.touches[0].pageX - e.touches[1].pageX,
+      e.touches[0].pageY - e.touches[1].pageY
+    );
+    const ratio = currentDist / initialDistance;
+    currentZoom = Math.max(0.3, Math.min(startZoom * ratio, 4));
+    updateTransform();
+  } else if (e.touches.length === 1 && isDragging) {
+    // กำลังเลื่อน
+    currentPanX = e.touches[0].pageX - startTouchPanX;
+    currentPanY = e.touches[0].pageY - startTouchPanY;
+    updateTransform();
+  }
+}, { passive: false });
+
+window.addEventListener('touchend', (e) => {
+  if (e.touches.length < 2) initialDistance = null;
+  if (e.touches.length === 0) isDragging = false;
+});
+
+
+function startFinalScene(){
+  const globeScene=document.getElementById('scene-globe');
+
+  gsap.to('#globe-wrap',{scale:15,opacity:0,duration:1.2,ease:'power3.in'});
+  gsap.to('#enter-btn',{opacity:0,scale:.5,duration:.5});
+
+  triggerWarpTransition(()=>{
+    globeScene.classList.remove('active');
+    globeScene.style.opacity=0;
+
+    gsap.to(':root', {
+      '--bg-c1': '#000000', 
+      '--bg-c2': '#000000', 
+      duration: 2
+    });
+
+    const wordRain=document.getElementById('word-rain');
+    gsap.to(wordRain,{opacity:1,duration:1.5});
+    startWordRain();
+    
+    // เปิดใช้งานระบบการซูมและเลื่อน
+    isFinalSceneActive = true;
+
+    setTimeout(()=>{
+      renderMode='fireworks';
+      launchFirework(W*.25,H*.3); launchFirework(W*.75,H*.3); launchFirework(W*.5,H*.2);
+      setTimeout(()=>{ fireworks=[]; renderMode='none'; },4000);
+    },1500);
+  });
+}
+</script>
+</body>
+</html>
